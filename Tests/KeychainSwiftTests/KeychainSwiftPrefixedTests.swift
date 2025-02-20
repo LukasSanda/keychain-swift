@@ -3,23 +3,23 @@ import XCTest
 
 class KeychainWithPrefixTests: XCTestCase {
   
-  var prefixed: KeychainSwift!
-  var nonPrefixed: KeychainSwift!
+  var prefixed: TestableKeychainSwift!
+  var nonPrefixed: TestableKeychainSwift!
 
   
   override func setUp() {
     super.setUp()
     
-    prefixed = KeychainSwift(keyPrefix: "test_prefix_")
-    nonPrefixed = KeychainSwift()
+    prefixed = TestableKeychainSwift(keyPrefix: "test_prefix_")
+    nonPrefixed = TestableKeychainSwift()
     
-    prefixed.clear()
-    nonPrefixed.clear()
+    try? prefixed.clear()
+    try? nonPrefixed.clear()
     
     prefixed.lastQueryParameters = nil
   }
   
-  func testKeyWithPrefix() {
+  func testKeyWithPrefix() throws {
     XCTAssertEqual("test_prefix_key", prefixed.keyWithPrefix("key"))
     XCTAssertEqual("key", nonPrefixed.keyWithPrefix("key"))
   }
@@ -27,34 +27,34 @@ class KeychainWithPrefixTests: XCTestCase {
   // MARK: - Set text
   // -----------------------
   
-  func testSet() {
+  func testSet() throws {
     let key = "key 1"
-    XCTAssertTrue(prefixed.set("prefixed", forKey: key))
-    XCTAssertTrue(nonPrefixed.set("non prefixed", forKey: key))
+    try prefixed.set("prefixed", forKey: key)
+    try nonPrefixed.set("non prefixed", forKey: key)
     
-    XCTAssertEqual("prefixed", prefixed.get(key)!)
-    XCTAssertEqual("non prefixed", nonPrefixed.get(key)!)
+    XCTAssertEqual("prefixed", try prefixed.get(key)!)
+    XCTAssertEqual("non prefixed", try nonPrefixed.get(key)!)
   }
   
   
   // MARK: - Set data
   // -----------------------
   
-  func testSetData() {
+  func testSetData() throws {
     let key = "key 123"
     
     let dataPrefixed = "prefixed".data(using: String.Encoding.utf8)!
     let dataNonPrefixed = "non prefixed".data(using: String.Encoding.utf8)!
     
-    XCTAssertTrue(prefixed.set(dataPrefixed, forKey: key))
-    XCTAssertTrue(nonPrefixed.set(dataNonPrefixed, forKey: key))
+    try prefixed.set(dataPrefixed, forKey: key)
+    try nonPrefixed.set(dataNonPrefixed, forKey: key)
 
     
-    let dataFromKeychainPrefixed = prefixed.getData(key)!
+    let dataFromKeychainPrefixed = try prefixed.getData(key)!
     let textFromKeychainPrefixed = String(data: dataFromKeychainPrefixed, encoding: .utf8)!
     XCTAssertEqual("prefixed", textFromKeychainPrefixed)
     
-    let dataFromKeychainNonPrefixed = nonPrefixed.getData(key)!
+    let dataFromKeychainNonPrefixed = try nonPrefixed.getData(key)!
     let textFromKeychainNonPrefixed = String(data: dataFromKeychainNonPrefixed, encoding: .utf8)!
     XCTAssertEqual("non prefixed", textFromKeychainNonPrefixed)
   }
@@ -62,15 +62,15 @@ class KeychainWithPrefixTests: XCTestCase {
   // MARK: - Delete
   // -----------------------
   
-  func testDelete() {
+  func testDelete() throws {
     let key = "key 1"
-    XCTAssertTrue(prefixed.set("prefixed", forKey: key))
-    XCTAssertTrue(nonPrefixed.set("non prefixed", forKey: key))
+    try prefixed.set("prefixed", forKey: key)
+    try nonPrefixed.set("non prefixed", forKey: key)
     
-    prefixed.delete(key)
+    try prefixed.delete(key)
     
-    XCTAssert(prefixed.get(key) == nil)
-    XCTAssertFalse(nonPrefixed.get(key) == nil) // non-prefixed still exists
+    XCTAssert(try prefixed.get(key) == nil)
+    XCTAssertFalse(try nonPrefixed.get(key) == nil) // non-prefixed still exists
   }
   
 }
