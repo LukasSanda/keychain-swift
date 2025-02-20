@@ -16,7 +16,7 @@ class ConcurrencyTests: XCTestCase {
         super.setUp()
 
         obj = KeychainSwift()
-        obj.clear()
+        try? obj.clear()
         obj.lastQueryParameters = nil
         obj.synchronizable = false
     }
@@ -30,7 +30,7 @@ class ConcurrencyTests: XCTestCase {
 
 
         let dataToWrite = "{ asdf ñlk BNALSKDJFÑLAKSJDFÑLKJ ZÑCLXKJ ÑALSKDFJÑLKASJDFÑLKJASDÑFLKJAÑSDLKFJÑLKJ}"
-        obj.set(dataToWrite, forKey: "test-key")
+        try? obj.set(dataToWrite, forKey: "test-key")
 
         var writes = 0
 
@@ -38,7 +38,7 @@ class ConcurrencyTests: XCTestCase {
         readQueue.async {
             for _ in 0..<400 {
                 let _: String? = synchronize( { completion in
-                    let result: String? = self.obj.get("test-key")
+                    let result: String? = try? self.obj.get("test-key")
                     DispatchQueue.global(qos: .background).async {
                         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                             completion(result)
@@ -51,7 +51,7 @@ class ConcurrencyTests: XCTestCase {
         readQueue2.async {
             for _ in 0..<400 {
                 let _: String? = synchronize( { completion in
-                    let result: String? = self.obj.get("test-key")
+                    let result: String? = try? self.obj.get("test-key")
                     DispatchQueue.global(qos: .background).async {
                         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                             completion(result)
@@ -64,7 +64,7 @@ class ConcurrencyTests: XCTestCase {
         readQueue3.async {
             for _ in 0..<400 {
                 let _: String? = synchronize( { completion in
-                    let result: String? = self.obj.get("test-key")
+                    let result: String? = try? self.obj.get("test-key")
                     DispatchQueue.global(qos: .background).async {
                         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                             completion(result)
@@ -78,7 +78,7 @@ class ConcurrencyTests: XCTestCase {
         deleteQueue.async {
           for _ in 0..<400 {
             let _: Bool = synchronize( { completion in
-              let result = self.obj.delete("test-key")
+              let result = tryOrFalse { try self.obj.delete("test-key") }
               DispatchQueue.global(qos: .background).async {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                   completion(result)
@@ -92,7 +92,7 @@ class ConcurrencyTests: XCTestCase {
         deleteQueue2.async {
           for _ in 0..<400 {
             let _: Bool = synchronize( { completion in
-              let result = self.obj.delete("test-key")
+              let result = tryOrFalse { try self.obj.delete("test-key") }
               DispatchQueue.global(qos: .background).async {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                   completion(result)
@@ -106,7 +106,7 @@ class ConcurrencyTests: XCTestCase {
         clearQueue.async {
           for _ in 0..<400 {
             let _: Bool = synchronize( { completion in
-              let result = self.obj.clear()
+              let result = tryOrFalse { try self.obj.clear() }
               DispatchQueue.global(qos: .background).async {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                   completion(result)
@@ -120,7 +120,7 @@ class ConcurrencyTests: XCTestCase {
         clearQueue2.async {
           for _ in 0..<400 {
             let _: Bool = synchronize( { completion in
-              let result = self.obj.clear()
+              let result = tryOrFalse { try self.obj.clear() }
               DispatchQueue.global(qos: .background).async {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
                   completion(result)
@@ -136,7 +136,7 @@ class ConcurrencyTests: XCTestCase {
                 let written: Bool = synchronize({ completion in
                     DispatchQueue.global(qos: .background).async {
                         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                            let result = self.obj.set(dataToWrite, forKey: "test-key")
+                            let result = tryOrFalse { try self.obj.set(dataToWrite, forKey: "test-key") }
                             completion(result)
                         }
                     }
@@ -154,7 +154,7 @@ class ConcurrencyTests: XCTestCase {
             let written: Bool = synchronize({ completion in
               DispatchQueue.global(qos: .background).async {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                  let result = self.obj.set(dataToWrite, forKey: "test-key")
+                    let result = tryOrFalse { try self.obj.set(dataToWrite, forKey: "test-key") }
                   completion(result)
                 }
               }
@@ -167,8 +167,8 @@ class ConcurrencyTests: XCTestCase {
         }
 
         for _ in 0..<1000 {
-            self.obj.set(dataToWrite, forKey: "test-key")
-            let _ = self.obj.get("test-key")
+            try? self.obj.set(dataToWrite, forKey: "test-key")
+            let _ = try? self.obj.get("test-key")
         }
         self.waitForExpectations(timeout: 30, handler: nil)
 
@@ -194,4 +194,13 @@ func synchronize<ResultType>(_ asynchClosure: (_ completion: @escaping (ResultTy
         result = timeoutWith()
     }
     return result!
+}
+
+func tryOrFalse(_ function: () throws -> Void) -> Bool {
+    do {
+        try function()
+        return true
+    } catch {
+        return false
+    }
 }

@@ -9,7 +9,7 @@ class AccessGroupTests: XCTestCase {
     super.setUp()
     
     obj = KeychainSwift()
-    obj.clear()
+    try? obj.clear()
     obj.lastQueryParameters = nil
     obj.accessGroup = nil
   }
@@ -42,25 +42,25 @@ class AccessGroupTests: XCTestCase {
   
   func testSet() {
     obj.accessGroup = "123.my.test.group"
-    obj.set("hello :)", forKey: "key 1")
+    try? obj.set("hello :)", forKey: "key 1")
     XCTAssertEqual("123.my.test.group", obj.lastQueryParameters?["agrp"] as! String)
   }
   
   func testGet() {
     obj.accessGroup = "123.my.test.group"
-    _ = obj.get("key 1")
+    _ = try? obj.get("key 1")
     XCTAssertEqual("123.my.test.group", obj.lastQueryParameters?["agrp"] as! String)
   }
   
   func testDelete() {
     obj.accessGroup = "123.my.test.group"
-    obj.delete("key 1")
+    _ = try? obj.delete("key 1")
     XCTAssertEqual("123.my.test.group", obj.lastQueryParameters?["agrp"] as! String)
   }
   
   func testClear() {
     obj.accessGroup = "123.my.test.group"
-    obj.clear()
+    try? obj.clear()
     XCTAssertEqual("123.my.test.group", obj.lastQueryParameters?["agrp"] as! String)
   }
 }

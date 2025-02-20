@@ -18,7 +18,7 @@ class AllKeysTests: XCTestCase {
     super.setUp()
     
     obj = KeychainSwift()
-    obj.clear()
+    try? obj.clear()
   }
   
   // MARK: - allKeys
@@ -28,12 +28,12 @@ class AllKeysTests: XCTestCase {
     ]
     
     items.enumerated().forEach { enumerator in
-        self.obj!.set("\(enumerator.offset)", forKey: enumerator.element)
+      try? self.obj!.set("\(enumerator.offset)", forKey: enumerator.element)
     }
     
     XCTAssertEqual(["one", "two"], obj.allKeys)
     
-    obj.clear()
+    try? obj.clear()
     XCTAssertEqual(obj.allKeys, [])
     
   }
