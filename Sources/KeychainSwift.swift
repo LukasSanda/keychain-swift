@@ -6,7 +6,7 @@ import Foundation
 A collection of helper functions for saving text and data in the keychain.
 
 */
-open class KeychainSwift {
+open class KeychainSwift: @unchecked Sendable {
   
   var lastQueryParameters: [String: Any]? // Used by the unit tests
 
@@ -17,8 +17,8 @@ open class KeychainSwift {
   Specify an access group that will be used to access keychain items. Access groups can be used to share keychain items between applications. When access group value is nil all application access groups are being accessed. Access group name is used by all functions: set, get, delete and clear.
 
   */
-  open var accessGroup: String?
-  
+  open var accessGroup: String? { _accessGroup }
+  private let _accessGroup: String?
   
   /**
    
@@ -28,21 +28,24 @@ open class KeychainSwift {
   Does not work on macOS.
    
   */
-  open var synchronizable: Bool = false
+  open var synchronizable: Bool { _synchronizable }
+  private let _synchronizable: Bool
 
   private let lock = NSLock()
 
-  
-  /// Instantiate a KeychainSwift object
-  public init() { }
-  
   /**
   
+   Instantiate a KeychainSwift object
+   
   - parameter keyPrefix: a prefix that is added before the key in get/set methods. Note that `clear` method still clears everything from the Keychain.
+  - parameter accessGroup: Access groups can be used to share keychain items between applications. When access group value is nil all application access groups are being accessed. Access group name is used by all functions: set, get, delete and clear.
+  - parameter synchronizable: Specifies whether the items can be synchronized with other devices through iCloud. Setting this property to true will add the item to other devices with the `set` method and obtain synchronizable items with the `get` command. Deleting synchronizable items will remove them from all devices. In order for keychain synchronization to work the user must enable "Keychain" in iCloud settings. Does not work on macOS.
 
   */
-  public init(keyPrefix: String) {
+  public init(keyPrefix: String = "", accessGroup: String? = nil, synchronizable: Bool = false) {
     self.keyPrefix = keyPrefix
+    _accessGroup = accessGroup
+    _synchronizable = synchronizable
   }
   
   /**

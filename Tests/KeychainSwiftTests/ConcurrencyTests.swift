@@ -6,16 +6,17 @@
 //
 
 import XCTest
+import Synchronization
 @testable import KeychainSwift
 
-class ConcurrencyTests: XCTestCase {
+class ConcurrencyTests: XCTestCase, @unchecked Sendable {
 
-    var obj: KeychainSwift!
+    var obj: TestableKeychainSwift!
 
     override func setUp() {
         super.setUp()
 
-        obj = KeychainSwift()
+        obj = TestableKeychainSwift()
         try? obj.clear()
         obj.lastQueryParameters = nil
         obj.synchronizable = false
@@ -23,6 +24,8 @@ class ConcurrencyTests: XCTestCase {
 
     // MARK: - addSynchronizableIfRequired
 
+    @available(iOS 18.0, *)
+    @MainActor
     func testConcurrencyDoesntCrash() {
 
         let expectation = self.expectation(description: "Wait for write loop")
@@ -32,7 +35,7 @@ class ConcurrencyTests: XCTestCase {
         let dataToWrite = "{ asdf ñlk BNALSKDJFÑLAKSJDFÑLKJ ZÑCLXKJ ÑALSKDFJÑLKASJDFÑLKJASDÑFLKJAÑSDLKFJÑLKJ}"
         try? obj.set(dataToWrite, forKey: "test-key")
 
-        var writes = 0
+        let writes = Atomic(0)
 
         let readQueue = DispatchQueue(label: "ReadQueue", attributes: [])
         readQueue.async {
@@ -142,7 +145,7 @@ class ConcurrencyTests: XCTestCase {
                     }
                 }, timeoutWith: false)
                 if written {
-                    writes = writes + 1
+                    writes.add(1, ordering: .relaxed)
                 }
             }
             expectation.fulfill()
@@ -160,7 +163,7 @@ class ConcurrencyTests: XCTestCase {
               }
             }, timeoutWith: false)
             if written {
-              writes = writes + 1
+                writes.add(1, ordering: .relaxed)
             }
           }
           expectation2.fulfill()
@@ -171,19 +174,19 @@ class ConcurrencyTests: XCTestCase {
             let _ = try? self.obj.get("test-key")
         }
         self.waitForExpectations(timeout: 30, handler: nil)
-
-        XCTAssertEqual(1000, writes)
+        
+        XCTAssertEqual(1000, writes.load(ordering: .acquiring))
     }
 }
 
 
 // Synchronizes a asynch closure
 // Ref: https://forums.developer.apple.com/thread/11519
-func synchronize<ResultType>(_ asynchClosure: (_ completion: @escaping (ResultType) -> ()) -> Void,
+func synchronize<ResultType: Sendable>(_ asynchClosure: (_ completion: @Sendable @escaping (ResultType) -> ()) -> Void,
                         timeout: DispatchTime = DispatchTime.distantFuture, timeoutWith: @autoclosure @escaping () -> ResultType) -> ResultType {
     let sem = DispatchSemaphore(value: 0)
 
-    var result: ResultType?
+    nonisolated(unsafe) var result: ResultType?
 
     asynchClosure { (r: ResultType) -> () in
         result = r

@@ -12,12 +12,12 @@ import XCTest
 
 class AllKeysTests: XCTestCase {
   
-  var obj: KeychainSwift!
+  var obj: TestableKeychainSwift!
   
   override func setUp() {
     super.setUp()
     
-    obj = KeychainSwift()
+    obj = TestableKeychainSwift()
     try? obj.clear()
   }
   
