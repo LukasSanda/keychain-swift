@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import Synchronization
+import Darwin
 @testable import KeychainSwift
 
 class ConcurrencyTests: XCTestCase, @unchecked Sendable {
@@ -24,7 +24,6 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
 
     // MARK: - addSynchronizableIfRequired
 
-    @available(iOS 18.0, *)
     @MainActor
     func testConcurrencyDoesntCrash() {
 
@@ -35,7 +34,7 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
         let dataToWrite = "{ asdf ñlk BNALSKDJFÑLAKSJDFÑLKJ ZÑCLXKJ ÑALSKDFJÑLKASJDFÑLKJASDÑFLKJAÑSDLKFJÑLKJ}"
         try? obj.set(dataToWrite, forKey: "test-key")
 
-        let writes = Atomic(0)
+        nonisolated(unsafe) var writes: Int64 = 0
 
         let readQueue = DispatchQueue(label: "ReadQueue", attributes: [])
         readQueue.async {
@@ -145,7 +144,7 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
                     }
                 }, timeoutWith: false)
                 if written {
-                    writes.add(1, ordering: .relaxed)
+                    OSAtomicIncrement64(&writes)
                 }
             }
             expectation.fulfill()
@@ -163,7 +162,7 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
               }
             }, timeoutWith: false)
             if written {
-                writes.add(1, ordering: .relaxed)
+                OSAtomicIncrement64(&writes)
             }
           }
           expectation2.fulfill()
@@ -175,7 +174,7 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
         }
         self.waitForExpectations(timeout: 30, handler: nil)
         
-        XCTAssertEqual(1000, writes.load(ordering: .acquiring))
+        XCTAssertEqual(1000, writes)
     }
 }
 

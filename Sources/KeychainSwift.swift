@@ -97,8 +97,8 @@ open class KeychainSwift: @unchecked Sendable {
       KeychainSwiftConstants.accessible  : accessible
     ]
       
-    query = addAccessGroupWhenPresent(query)
-    query = addSynchronizableIfRequired(query, addingItems: true)
+    addAccessGroupWhenPresent(&query)
+    addSynchronizableIfRequired(&query, addingItems: true)
     lastQueryParameters = query
     
     try throwIfFailed(SecItemAdd(query as CFDictionary, nil))
@@ -172,8 +172,8 @@ open class KeychainSwift: @unchecked Sendable {
       query[KeychainSwiftConstants.returnData] =  kCFBooleanTrue
     }
     
-    query = addAccessGroupWhenPresent(query)
-    query = addSynchronizableIfRequired(query, addingItems: false)
+    addAccessGroupWhenPresent(&query)
+    addSynchronizableIfRequired(&query, addingItems: false)
     lastQueryParameters = query
     
     var result: AnyObject?
@@ -228,6 +228,9 @@ open class KeychainSwift: @unchecked Sendable {
    
   */
   public var allKeys: [String] {
+    lock.lock()
+    defer { lock.unlock() }
+      
     var query: [String: Any] = [
       KeychainSwiftConstants.klass : kSecClassGenericPassword,
       KeychainSwiftConstants.returnData : true,
@@ -236,8 +239,8 @@ open class KeychainSwift: @unchecked Sendable {
       KeychainSwiftConstants.matchLimit: KeychainSwiftConstants.secMatchLimitAll
     ]
   
-    query = addAccessGroupWhenPresent(query)
-    query = addSynchronizableIfRequired(query, addingItems: false)
+    addAccessGroupWhenPresent(&query)
+    addSynchronizableIfRequired(&query, addingItems: false)
 
     var result: AnyObject?
 
@@ -270,8 +273,8 @@ open class KeychainSwift: @unchecked Sendable {
       KeychainSwiftConstants.attrAccount : prefixedKey
     ]
     
-    query = addAccessGroupWhenPresent(query)
-    query = addSynchronizableIfRequired(query, addingItems: false)
+    addAccessGroupWhenPresent(&query)
+    addSynchronizableIfRequired(&query, addingItems: false)
     lastQueryParameters = query
     
     let lastResultCode = SecItemDelete(query as CFDictionary)
@@ -294,8 +297,8 @@ open class KeychainSwift: @unchecked Sendable {
     defer { lock.unlock() }
     
     var query: [String: Any] = [ kSecClass as String : kSecClassGenericPassword ]
-    query = addAccessGroupWhenPresent(query)
-    query = addSynchronizableIfRequired(query, addingItems: false)
+    addAccessGroupWhenPresent(&query)
+    addSynchronizableIfRequired(&query, addingItems: false)
     lastQueryParameters = query
     
     try throwIfFailed(SecItemDelete(query as CFDictionary))
@@ -306,12 +309,10 @@ open class KeychainSwift: @unchecked Sendable {
     return "\(keyPrefix)\(key)"
   }
   
-  func addAccessGroupWhenPresent(_ items: [String: Any]) -> [String: Any] {
-    guard let accessGroup = accessGroup else { return items }
+  func addAccessGroupWhenPresent(_ items: inout [String: Any]) {
+    guard let accessGroup = accessGroup else { return }
     
-    var result: [String: Any] = items
-    result[KeychainSwiftConstants.accessGroup] = accessGroup
-    return result
+    items[KeychainSwiftConstants.accessGroup] = accessGroup
   }
   
   /**
@@ -324,11 +325,9 @@ open class KeychainSwift: @unchecked Sendable {
    - returns: the dictionary with kSecAttrSynchronizable item added if it was requested. Otherwise, it returns the original dictionary.
  
   */
-  func addSynchronizableIfRequired(_ items: [String: Any], addingItems: Bool) -> [String: Any] {
-    if !synchronizable { return items }
-    var result: [String: Any] = items
-    result[KeychainSwiftConstants.attrSynchronizable] = addingItems == true ? true : kSecAttrSynchronizableAny
-    return result
+  func addSynchronizableIfRequired(_ items: inout [String: Any], addingItems: Bool) {
+    if !synchronizable { return }
+    items[KeychainSwiftConstants.attrSynchronizable] = addingItems == true ? true : kSecAttrSynchronizableAny
   }
   
   @inlinable
