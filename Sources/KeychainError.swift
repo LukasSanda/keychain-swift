@@ -8,21 +8,35 @@
 import Foundation
 import Security
 
-public struct KeychainError : CustomNSError {
-    public init(_ code: OSStatus) {
-        errorCode = code
+public struct KeychainError : RawRepresentable, CustomStringConvertible {
+    public init(rawValue: OSStatus) {
+        self.rawValue = rawValue
     }
     
-    public static var errorDomain: String { NSOSStatusErrorDomain }
+    public init(_ code: OSStatus) {
+        rawValue = code
+    }
     
     /// The result code for the operation.
-    public let errorCode: OSStatus
+    public let rawValue: OSStatus
     
     /// Retrieve the localized description for this error. This uses ``/Security/SecCopyErrorMessageString(_:_:)`` internally.
     public var localizedDescription: String {
-        if let message = SecCopyErrorMessageString(errorCode, nil) {
+        if let message = SecCopyErrorMessageString(rawValue, nil) {
             return message as String
         }
-        return "KeychainError \(errorCode)"
+        return description
     }
+    
+    public var description: String {
+        "KeychainError(\(rawValue))"
+    }
+}
+
+extension KeychainError : CustomNSError {
+    public static var errorDomain: String { NSOSStatusErrorDomain }
+}
+
+extension KeychainError : LocalizedError {
+    public var errorDescription: String? { localizedDescription }
 }
