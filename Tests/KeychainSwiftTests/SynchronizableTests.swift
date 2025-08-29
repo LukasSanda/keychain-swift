@@ -17,12 +17,12 @@ class SynchronizableTests: XCTestCase {
   // MARK: - addSynchronizableIfRequired
   
   func testAddSynchronizableGroup_addItemsFalse() {
-    let items: [String: Any] = [
+    var result: [String: Any] = [
       "one": "two"
     ]
     
     obj.synchronizable = true
-    let result = obj.addSynchronizableIfRequired(items, addingItems: false)
+    obj.addSynchronizableIfRequired(&result, addingItems: false)
     
     XCTAssertEqual(2, result.count)
     XCTAssertEqual("two", result["one"] as? String)
@@ -30,12 +30,12 @@ class SynchronizableTests: XCTestCase {
   }
   
   func testAddSynchronizableGroup_addItemsTrue() {
-    let items: [String: Any] = [
+      var result: [String: Any] = [
       "one": "two"
     ]
     
     obj.synchronizable = true
-    let result = obj.addSynchronizableIfRequired(items, addingItems: true)
+    obj.addSynchronizableIfRequired(&result, addingItems: true)
     
     XCTAssertEqual(2, result.count)
     XCTAssertEqual("two", result["one"] as? String)
@@ -43,11 +43,11 @@ class SynchronizableTests: XCTestCase {
   }
   
   func testAddSynchronizableGroup_nil() {
-    let items: [String: Any] = [
+    var result: [String: Any] = [
       "one": "two"
     ]
     
-    let result = obj.addSynchronizableIfRequired(items, addingItems: false)
+    obj.addSynchronizableIfRequired(&result, addingItems: false)
     
     XCTAssertEqual(1, result.count)
     XCTAssertEqual("two", result["one"] as? String)

@@ -17,12 +17,12 @@ class AccessGroupTests: XCTestCase {
   // MARK: - Add access group
   
   func testAddAccessGroup() {
-    let items: [String: Any] = [
+    var result: [String: Any] = [
       "one": "two"
     ]
     
     obj.accessGroup = "123.my.test.group"
-    let result = obj.addAccessGroupWhenPresent(items)
+    obj.addAccessGroupWhenPresent(&result)
     
     XCTAssertEqual(2, result.count)
     XCTAssertEqual("two", result["one"] as! String)
@@ -30,11 +30,11 @@ class AccessGroupTests: XCTestCase {
   }
   
   func testAddAccessGroup_nil() {
-    let items: [String: Any] = [
+    var result: [String: Any] = [
       "one": "two"
     ]
     
-    let result = obj.addAccessGroupWhenPresent(items)
+    obj.addAccessGroupWhenPresent(&result)
     
     XCTAssertEqual(1, result.count)
     XCTAssertEqual("two", result["one"] as! String)
