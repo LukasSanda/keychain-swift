@@ -233,9 +233,7 @@ open class KeychainSwift: @unchecked Sendable {
       
     var query: [String: Any] = [
       KeychainSwiftConstants.klass : kSecClassGenericPassword,
-      KeychainSwiftConstants.returnData : true,
       KeychainSwiftConstants.returnAttributes: true,
-      KeychainSwiftConstants.returnReference: true,
       KeychainSwiftConstants.matchLimit: KeychainSwiftConstants.secMatchLimitAll
     ]
   

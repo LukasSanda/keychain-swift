@@ -26,146 +26,65 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testConcurrencyDoesntCrash() {
-
-        let expectation = self.expectation(description: "Wait for write loop")
+        let expectation1 = self.expectation(description: "Wait for write loop")
         let expectation2 = self.expectation(description: "Wait for write loop")
 
-
-        let dataToWrite = "{ asdf ñlk BNALSKDJFÑLAKSJDFÑLKJ ZÑCLXKJ ÑALSKDFJÑLKASJDFÑLKJASDÑFLKJAÑSDLKFJÑLKJ}"
+        let dataToWrite = "{ asdf ñlk BNALSKDJFÑLKJ ZÑCLXKJ ÑALSKDFJÑLKASJDFÑLKJASDÑFLKJAÑSDLKFJÑLKJ}"
         try? obj.set(dataToWrite, forKey: "test-key")
 
         nonisolated(unsafe) var writes: Int64 = 0
 
-        let readQueue = DispatchQueue(label: "ReadQueue", attributes: [])
+        // Read queues — call operations directly, no async main-thread round-trip needed.
+        // The original design bounced completions via DispatchQueue.main.asyncAfter(+5ms),
+        // creating a main-thread bottleneck (3800 callbacks × 5ms > 30s timeout on macOS).
+        let readQueue = DispatchQueue(label: "ReadQueue")
         readQueue.async {
-            for _ in 0..<400 {
-                let _: String? = synchronize( { completion in
-                    let result: String? = try? self.obj.get("test-key")
-                    DispatchQueue.global(qos: .background).async {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                            completion(result)
-                        }
-                    }
-                }, timeoutWith: nil)
-            }
+            for _ in 0..<400 { let _ = try? self.obj.get("test-key") }
         }
-        let readQueue2 = DispatchQueue(label: "ReadQueue2", attributes: [])
+        let readQueue2 = DispatchQueue(label: "ReadQueue2")
         readQueue2.async {
-            for _ in 0..<400 {
-                let _: String? = synchronize( { completion in
-                    let result: String? = try? self.obj.get("test-key")
-                    DispatchQueue.global(qos: .background).async {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                            completion(result)
-                        }
-                    }
-                }, timeoutWith: nil)
-            }
+            for _ in 0..<400 { let _ = try? self.obj.get("test-key") }
         }
-        let readQueue3 = DispatchQueue(label: "ReadQueue3", attributes: [])
+        let readQueue3 = DispatchQueue(label: "ReadQueue3")
         readQueue3.async {
-            for _ in 0..<400 {
-                let _: String? = synchronize( { completion in
-                    let result: String? = try? self.obj.get("test-key")
-                    DispatchQueue.global(qos: .background).async {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                            completion(result)
-                        }
-                    }
-                }, timeoutWith: nil)
-            }
-        }
-      
-        let deleteQueue = DispatchQueue(label: "deleteQueue", attributes: [])
-        deleteQueue.async {
-          for _ in 0..<400 {
-            let _: Bool = synchronize( { completion in
-              let result = tryOrFalse { try self.obj.delete("test-key") }
-              DispatchQueue.global(qos: .background).async {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                  completion(result)
-                }
-              }
-            }, timeoutWith: false)
-          }
-        }
-      
-        let deleteQueue2 = DispatchQueue(label: "deleteQueue2", attributes: [])
-        deleteQueue2.async {
-          for _ in 0..<400 {
-            let _: Bool = synchronize( { completion in
-              let result = tryOrFalse { try self.obj.delete("test-key") }
-              DispatchQueue.global(qos: .background).async {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                  completion(result)
-                }
-              }
-            }, timeoutWith: false)
-          }
-        }
-      
-        let clearQueue = DispatchQueue(label: "clearQueue", attributes: [])
-        clearQueue.async {
-          for _ in 0..<400 {
-            let _: Bool = synchronize( { completion in
-              let result = tryOrFalse { try self.obj.clear() }
-              DispatchQueue.global(qos: .background).async {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                  completion(result)
-                }
-              }
-            }, timeoutWith: false)
-          }
-        }
-      
-        let clearQueue2 = DispatchQueue(label: "clearQueue2", attributes: [])
-        clearQueue2.async {
-          for _ in 0..<400 {
-            let _: Bool = synchronize( { completion in
-              let result = tryOrFalse { try self.obj.clear() }
-              DispatchQueue.global(qos: .background).async {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                  completion(result)
-                }
-              }
-            }, timeoutWith: false)
-          }
+            for _ in 0..<400 { let _ = try? self.obj.get("test-key") }
         }
 
-        let writeQueue = DispatchQueue(label: "WriteQueue", attributes: [])
+        let deleteQueue = DispatchQueue(label: "deleteQueue")
+        deleteQueue.async {
+            for _ in 0..<400 { try? self.obj.delete("test-key") }
+        }
+        let deleteQueue2 = DispatchQueue(label: "deleteQueue2")
+        deleteQueue2.async {
+            for _ in 0..<400 { try? self.obj.delete("test-key") }
+        }
+
+        let clearQueue = DispatchQueue(label: "clearQueue")
+        clearQueue.async {
+            for _ in 0..<400 { try? self.obj.clear() }
+        }
+        let clearQueue2 = DispatchQueue(label: "clearQueue2")
+        clearQueue2.async {
+            for _ in 0..<400 { try? self.obj.clear() }
+        }
+
+        let writeQueue = DispatchQueue(label: "WriteQueue")
         writeQueue.async {
             for _ in 0..<500 {
-                let written: Bool = synchronize({ completion in
-                    DispatchQueue.global(qos: .background).async {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                            let result = tryOrFalse { try self.obj.set(dataToWrite, forKey: "test-key") }
-                            completion(result)
-                        }
-                    }
-                }, timeoutWith: false)
-                if written {
+                if (try? self.obj.set(dataToWrite, forKey: "test-key")) != nil {
                     OSAtomicIncrement64(&writes)
                 }
             }
-            expectation.fulfill()
+            expectation1.fulfill()
         }
-      
-        let writeQueue2 = DispatchQueue(label: "WriteQueue2", attributes: [])
+        let writeQueue2 = DispatchQueue(label: "WriteQueue2")
         writeQueue2.async {
-          for _ in 0..<500 {
-            let written: Bool = synchronize({ completion in
-              DispatchQueue.global(qos: .background).async {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
-                    let result = tryOrFalse { try self.obj.set(dataToWrite, forKey: "test-key") }
-                  completion(result)
+            for _ in 0..<500 {
+                if (try? self.obj.set(dataToWrite, forKey: "test-key")) != nil {
+                    OSAtomicIncrement64(&writes)
                 }
-              }
-            }, timeoutWith: false)
-            if written {
-                OSAtomicIncrement64(&writes)
             }
-          }
-          expectation2.fulfill()
+            expectation2.fulfill()
         }
 
         for _ in 0..<1000 {
@@ -173,36 +92,7 @@ class ConcurrencyTests: XCTestCase, @unchecked Sendable {
             let _ = try? self.obj.get("test-key")
         }
         self.waitForExpectations(timeout: 30, handler: nil)
-        
+
         XCTAssertEqual(1000, writes)
-    }
-}
-
-
-// Synchronizes a asynch closure
-// Ref: https://forums.developer.apple.com/thread/11519
-func synchronize<ResultType: Sendable>(_ asynchClosure: (_ completion: @Sendable @escaping (ResultType) -> ()) -> Void,
-                        timeout: DispatchTime = DispatchTime.distantFuture, timeoutWith: @autoclosure @escaping () -> ResultType) -> ResultType {
-    let sem = DispatchSemaphore(value: 0)
-
-    nonisolated(unsafe) var result: ResultType?
-
-    asynchClosure { (r: ResultType) -> () in
-        result = r
-        sem.signal()
-    }
-    _ = sem.wait(timeout: timeout)
-    if result == nil {
-        result = timeoutWith()
-    }
-    return result!
-}
-
-func tryOrFalse(_ function: () throws -> Void) -> Bool {
-    do {
-        try function()
-        return true
-    } catch {
-        return false
     }
 }

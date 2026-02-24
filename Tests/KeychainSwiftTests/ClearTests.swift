@@ -11,14 +11,14 @@ class ClearTests: XCTestCase {
     obj = TestableKeychainSwift()
   }
   
-  func testClear() {
-    obj.set("hello :)", forKey: "key 1")
-    obj.set("hello two", forKey: "key 2")
-    
-    obj.clear()
-    
-    XCTAssert(obj.get("key 1") == nil)
-    XCTAssert(obj.get("key 2") == nil)
+  func testClear() throws {
+    try obj.set("hello :)", forKey: "key 1")
+    try obj.set("hello two", forKey: "key 2")
+
+    try obj.clear()
+
+    XCTAssert((try obj.get("key 1")) == nil)
+    XCTAssert((try obj.get("key 2")) == nil)
   }
 }
 
