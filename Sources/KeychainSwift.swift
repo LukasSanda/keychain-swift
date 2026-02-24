@@ -6,18 +6,18 @@ import Foundation
 A collection of helper functions for saving text and data in the keychain.
 
 */
-open class KeychainSwift: @unchecked Sendable {
-  
-  var lastQueryParameters: [String: Any]? // Used by the unit tests
+public final class KeychainSwift: Sendable {
 
-  var keyPrefix = "" // Can be useful in test.
+  nonisolated(unsafe) var lastQueryParameters: [String: Any]? // Used by the unit tests
+
+  let keyPrefix: String // Can be useful in test.
   
   /**
 
   Specify an access group that will be used to access keychain items. Access groups can be used to share keychain items between applications. When access group value is nil all application access groups are being accessed. Access group name is used by all functions: set, get, delete and clear.
 
   */
-  open var accessGroup: String? { _accessGroup }
+  public var accessGroup: String? { _accessGroup }
   private let _accessGroup: String?
   
   /**
@@ -28,7 +28,7 @@ open class KeychainSwift: @unchecked Sendable {
   Does not work on macOS.
    
   */
-  open var synchronizable: Bool { _synchronizable }
+  public var synchronizable: Bool { _synchronizable }
   private let _synchronizable: Bool
 
   private let lock = NSLock()
@@ -57,7 +57,7 @@ open class KeychainSwift: @unchecked Sendable {
   - parameter withAccess: Value that indicates when your app needs access to the text in the keychain item. By default the .AccessibleWhenUnlocked option is used that permits the data to be accessed only while the device is unlocked by the user.
 
   */
-  open func set(_ value: String, forKey key: String,
+  public func set(_ value: String, forKey key: String,
                   withAccess access: KeychainSwiftAccessOptions? = nil) throws {
     
     if let value = value.data(using: String.Encoding.utf8) {
@@ -76,7 +76,7 @@ open class KeychainSwift: @unchecked Sendable {
   - parameter withAccess: Value that indicates when your app needs access to the text in the keychain item. By default the .AccessibleWhenUnlocked option is used that permits the data to be accessed only while the device is unlocked by the user.
   
   */
-  open func set(_ value: Data, forKey key: String,
+  public func set(_ value: Data, forKey key: String,
     withAccess access: KeychainSwiftAccessOptions? = nil) throws {
     
     // The lock prevents the code to be run simultaneously
@@ -113,7 +113,7 @@ open class KeychainSwift: @unchecked Sendable {
   - parameter withAccess: Value that indicates when your app needs access to the value in the keychain item. By default the .AccessibleWhenUnlocked option is used that permits the data to be accessed only while the device is unlocked by the user.
 
   */
-  open func set(_ value: Bool, forKey key: String,
+  public func set(_ value: Bool, forKey key: String,
     withAccess access: KeychainSwiftAccessOptions? = nil) throws {
   
     let bytes: [UInt8] = value ? [1] : [0]
@@ -130,7 +130,7 @@ open class KeychainSwift: @unchecked Sendable {
   - returns: The text value from the keychain. Returns nil if unable to read the item.
   
   */
-  open func get(_ key: String) throws -> String? {
+  public func get(_ key: String) throws -> String? {
     if let data = try getData(key) {
       
       if let currentString = String(data: data, encoding: .utf8) {
@@ -152,7 +152,7 @@ open class KeychainSwift: @unchecked Sendable {
   - returns: The text value from the keychain. Returns nil if unable to read the item.
   
   */
-  open func getData(_ key: String, asReference: Bool = false) throws -> Data? {
+  public func getData(_ key: String, asReference: Bool = false) throws -> Data? {
     // The lock prevents the code to be run simultaneously
     // from multiple threads which may result in crashing
     lock.lock()
@@ -197,7 +197,7 @@ open class KeychainSwift: @unchecked Sendable {
   - returns: The boolean value from the keychain. Returns nil if unable to read the item.
 
   */
-  open func getBool(_ key: String) throws -> Bool? {
+  public func getBool(_ key: String) throws -> Bool? {
     guard let data = try getData(key) else { return nil }
     guard let firstBit = data.first else { return nil }
     return firstBit == 1
@@ -212,7 +212,7 @@ open class KeychainSwift: @unchecked Sendable {
   
   */
   @discardableResult
-  open func delete(_ key: String) throws -> Bool {
+  public func delete(_ key: String) throws -> Bool {
     // The lock prevents the code to be run simultaneously
     // from multiple threads which may result in crashing
     lock.lock()
@@ -288,7 +288,7 @@ open class KeychainSwift: @unchecked Sendable {
   Deletes all Keychain items used by the app. Note that this method deletes all items regardless of the prefix settings used for initializing the class.
   
   */
-  open func clear() throws {
+  public func clear() throws {
     // The lock prevents the code to be run simultaneously
     // from multiple threads which may result in crashing
     lock.lock()
