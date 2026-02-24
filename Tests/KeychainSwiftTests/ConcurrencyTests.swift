@@ -11,14 +11,15 @@ import Darwin
 
 class ConcurrencyTests: XCTestCase, @unchecked Sendable {
 
-    var obj: KeychainSwift!
+    var obj: TestableKeychainSwift!
 
     override func setUp() {
         super.setUp()
 
-        obj = KeychainSwift()
+        obj = TestableKeychainSwift()
         try? obj.clear()
         obj.lastQueryParameters = nil
+        obj.synchronizable = false
     }
 
     // MARK: - addSynchronizableIfRequired
